@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -19,6 +21,8 @@ const (
 	defaultModel = "gpt-3.5-turbo"
 	// Default system prompt for the AI
 	defaultSystemPrompt = "You are a helpful assistant that refactors Markdown content. Please improve its structure, clarity, and formatting while preserving the original meaning."
+	// GitHub system prompt for the AI
+	githubSystemPrompt = "You are a helpful assiatant that reads a github repo and writes a Markdown READ.me file. Please explain how to use the repo and what is important for a new user to know about this repository."
 )
 
 // APIRequest represents the request payload for the OpenAI API
@@ -140,30 +144,36 @@ func refactorMarkdown(apiKey, model, systemPrompt, markdownContent string) (stri
 	return refactoredContent, nil
 }
 
+// func convertRawGitHubURL(githubURL string) string {
+// 	parts := strings.Split(githubURL, "/")
+// 	// if len(parts) < 7 || parts[5] != "blob" {
+// 	// 	return ""
+// 	// }
+
+// 	// Construct raw URL
+// 	user := parts[3]
+// 	repo := parts[4]
+// 	branch := parts[6]
+// 	fmt.Println(parts)
+// 	path := strings.Join(parts[7:], "/")
+
+// 	return fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s", user, repo, branch, path)
+// }
+
 func main() {
+	//var markdownContent []byte
+	var responseContent string
+
 	// Define command-line flags
 	inputFile := flag.String("input", "", "Path to the input Markdown file (required)")
 	outputFile := flag.String("output", "", "Path to the output Markdown file (optional, prints to stdout if not provided)")
 	apiKey := flag.String("apikey", os.Getenv("OPENAI_API_KEY"), "OpenAI API key (can also be set via OPENAI_API_KEY environment variable)")
 	model := flag.String("model", defaultModel, "OpenAI model to use (e.g., gpt-3.5-turbo, gpt-4)")
+	gitURL := flag.String("git", "", "GitHub URL to fetch raw content from")
+	// zipFile := flag.String("z", "", "Path to the input zip file (optional)")
 	systemPrompt := flag.String("prompt", defaultSystemPrompt, "System prompt to guide the AI refactoring")
-
+	githubPrompt := flag.String("gitprompt", githubSystemPrompt, "System prompt to guild the AI building the READ.me file")
 	flag.Parse()
-
-	// Validate input file
-	if *inputFile == "" {
-		fmt.Fprintln(os.Stderr, "Error: Input file path is required.")
-		flag.Usage()
-		os.Exit(1)
-	}
-
-	// Read the input Markdown file
-	markdownBytes, err := os.ReadFile(*inputFile)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading input file %s: %v\n", *inputFile, err)
-		os.Exit(1)
-	}
-	markdownContent := string(markdownBytes)
 
 	// Check if API key is provided
 	if *apiKey == "" {
@@ -171,16 +181,52 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Call the refactoring function
-	refactoredContent, err := refactorMarkdown(*apiKey, *model, *systemPrompt, markdownContent)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error refactoring Markdown: %v\n", err)
+	// Validate input file
+	if *inputFile == "" && *gitURL == "" {
+		fmt.Fprintln(os.Stderr, "Error: Input file path or GitHub url is required.")
+		flag.Usage()
 		os.Exit(1)
+	}
+
+	if *inputFile != "" {
+		// Read the input Markdown file
+		markdownBytes, err := os.ReadFile(*inputFile)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error reading input file %s: %v\n", *inputFile, err)
+			os.Exit(1)
+		}
+		markdownContent := string(markdownBytes)
+
+		responseContent, err = refactorMarkdown(*apiKey, *model, *systemPrompt, markdownContent)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error refactoring Markdown: %v\n", err)
+			os.Exit(1)
+		}
+	} else if *gitURL != "" {
+		parsedURL, err := url.Parse(*gitURL)
+		if err != nil || !strings.Contains(parsedURL.Host, "github.com") {
+			fmt.Println("Error: Invalid GitHub URL")
+			os.Exit(1)
+		}
+		fmt.Println(*gitURL)
+		tmp := *gitURL
+		// Transform to raw.githubusercontent.com
+		//rawURL, err := convertRawGitHubURL(tmp)
+		// if rawURL == "" || err != nil {
+		// 	fmt.Println("Error Could not convert to raw GitHub URL")
+		// 	os.Exit(1)
+		// }
+
+		responseContent, err = refactorMarkdown(*apiKey, *model, *githubPrompt, tmp)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error refactoring Markdown: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	// Output the refactored content
 	if *outputFile != "" {
-		err := os.WriteFile(*outputFile, []byte(refactoredContent), 0644)
+		err := os.WriteFile(*outputFile, []byte(responseContent), 0644)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing output file %s: %v\n", *outputFile, err)
 			os.Exit(1)
@@ -189,6 +235,6 @@ func main() {
 	} else {
 		// Print to stdout if no output file is specified
 		fmt.Println("\n--- Refactored Markdown ---")
-		fmt.Println(refactoredContent)
+		fmt.Println(responseContent)
 	}
 }

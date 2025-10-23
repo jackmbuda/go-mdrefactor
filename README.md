@@ -8,7 +8,7 @@ The tool accepts a Markdown file as input, sends its content to the specified Op
 
 ## Features
 
-- Reads Markdown content from a local file.
+- Reads Markdown content from a local file or from a repository's github url.
 - Sends content to the OpenAI API for refactoring.
 - Supports various OpenAI models, configurable through a flag.
 - Allows customization of system prompts to guide the AI's refactoring style.
@@ -74,6 +74,7 @@ Flags:
 - `-apikey <key>`: Your OpenAI API key, overriding the environment variable.
 - `-model <model_name>`: The OpenAI model for refactoring.
 - `-prompt "<system_prompt_text>"`: System prompt to guide the AI's refactoring style.
+- `-git "<github_url>"`: The github url to the targeted repository.
 
 ## Examples
 
@@ -81,6 +82,7 @@ Flags:
 ./mdrefactor -input mydoc.md
 ./mdrefactor -input mydoc.md -output refactored_doc.md -apikey "sk-yourkey"
 ./mdrefactor -input draft.md -output final.md -model "gpt-4" -prompt "Refactor this Markdown to be more concise and suitable for a technical audience."
+./mdrefactor -g https://github.com/example/go-example 
 ```
 
 ## Building for Distribution (Cross-Compilation)

@@ -192,16 +192,8 @@ func main() {
 			fmt.Println("Error: Invalid GitHub URL")
 			os.Exit(1)
 		}
-		fmt.Println(*gitURL)
-		tmp := *gitURL
-		// Transform to raw.githubusercontent.com
-		//rawURL, err := convertRawGitHubURL(tmp)
-		// if rawURL == "" || err != nil {
-		// 	fmt.Println("Error Could not convert to raw GitHub URL")
-		// 	os.Exit(1)
-		// }
 
-		responseContent, err = refactorMarkdown(*apiKey, *model, *githubPrompt, tmp)
+		responseContent, err = refactorMarkdown(*apiKey, *model, *githubPrompt, *gitURL)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error refactoring Markdown: %v\n", err)
 			os.Exit(1)

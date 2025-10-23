@@ -144,22 +144,6 @@ func refactorMarkdown(apiKey, model, systemPrompt, markdownContent string) (stri
 	return refactoredContent, nil
 }
 
-// func convertRawGitHubURL(githubURL string) string {
-// 	parts := strings.Split(githubURL, "/")
-// 	// if len(parts) < 7 || parts[5] != "blob" {
-// 	// 	return ""
-// 	// }
-
-// 	// Construct raw URL
-// 	user := parts[3]
-// 	repo := parts[4]
-// 	branch := parts[6]
-// 	fmt.Println(parts)
-// 	path := strings.Join(parts[7:], "/")
-
-// 	return fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s", user, repo, branch, path)
-// }
-
 func main() {
 	//var markdownContent []byte
 	var responseContent string
